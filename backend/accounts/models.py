@@ -6,7 +6,6 @@ class UserAccountManager(BaseUserManager):
         if not email:
             raise ValueError('User must have an email address')
 
-
         email = self.normalize_email(email)
         user = self.model(email=email, name=name)
 
@@ -24,6 +23,9 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email' # Email for unique authentication instead of username 
     REQUIRED_FIELDS = ['name'] # this are fields that must be specified before the request is made
 
+    objects = UserAccountManager() # veri important to add
+
+    
     def get_full_name(self):
         return self.name
 
