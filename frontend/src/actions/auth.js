@@ -14,8 +14,82 @@ import {
    SIGNUP_SUCCESS,
    ACTIVATION_FAIL,
    ACTIVATION_SUCCESS,
+   GOOGLE_AUTH_SUCCESS,
+   GOOGLE_AUTH_FAIL,
 } from "./types";
 import axios from "axios";
+
+export const load_user = () => async (dispatch) => {
+   if (localStorage.getItem("access")) {
+      const config = {
+         headers: {
+            "Content-Type": "application/json",
+            Authorization: `JWT ${localStorage.getItem("access")}`,
+            Accept: "application/json",
+         },
+      };
+      try {
+         const res = await axios.get(
+            `${process.env.REACT_APP_API_URL}/auth/users/me/`,
+            config
+         );
+         console.log(res.data);
+         dispatch({
+            type: USER_LOADED_SUCCESS,
+            payload: res.data,
+         });
+      } catch (err) {
+         dispatch({
+            type: USER_LOADED_FAIL,
+         });
+      }
+   } else {
+      dispatch({
+         type: USER_LOADED_FAIL,
+      });
+   }
+};
+
+export const googleAuthenticate = (state, code) => async (dispatch) => {
+   // basically if we have a state and code but don't have an access
+   // in the local storage the we can authenticate with google that means we haven't registered normally
+   // before
+   if (state && code && !localStorage.getItem("access")) {
+      const config = {
+         headers: {
+            "content-type": "application/x-www-form-urlencoded",
+         },
+      };
+      const details = {
+         state: state,
+         code: code,
+      };
+      // looping tHROUGH details and making it [state='state', code='code'] and den joining it together with to be a string
+      // by separating it by '&'
+      const formBody = Object.keys(details)
+         .map(
+            (key) =>
+               encodeURIComponent(key) + "=" + encodeURIComponent(details[key])
+         )
+         .join("&");
+      try {
+         const res = await axios.post(
+            `${process.env.REACT_APP_API_URL}/auth/o/google-oauth2/?${formBody}`,
+            config
+         );
+         console.log(res);
+         dispatch({
+            type: GOOGLE_AUTH_SUCCESS,
+            payload: res.data,
+         });
+         dispatch(load_user());
+      } catch (err) {
+         dispatch({
+            type: GOOGLE_AUTH_FAIL,
+         });
+      }
+   }
+};
 
 export const checkAuthenticated = () => async (dispatch) => {
    if (localStorage.getItem("access")) {
@@ -53,36 +127,7 @@ export const checkAuthenticated = () => async (dispatch) => {
       });
    }
 };
-export const load_user = () => async (dispatch) => {
-   if (localStorage.getItem("access")) {
-      const config = {
-         headers: {
-            "Content-Type": "application/json",
-            Authorization: `JWT ${localStorage.getItem("access")}`,
-            Accept: "application/json",
-         },
-      };
-      try {
-         const res = await axios.get(
-            `${process.env.REACT_APP_API_URL}/auth/users/me/`,
-            config
-         );
-         console.log(res.data);
-         dispatch({
-            type: USER_LOADED_SUCCESS,
-            payload: res.data,
-         });
-      } catch (err) {
-         dispatch({
-            type: USER_LOADED_FAIL,
-         });
-      }
-   } else {
-      dispatch({
-         type: USER_LOADED_FAIL,
-      });
-   }
-};
+
 export const login = (email, password) => async (dispatch) => {
    const config = {
       headers: {
@@ -109,13 +154,20 @@ export const login = (email, password) => async (dispatch) => {
 };
 
 export const signup =
-   (email, name, password, re_password) => async (dispatch) => {
+   (email, first_name, last_name, password, re_password) =>
+   async (dispatch) => {
       const config = {
          headers: {
             "Content-Type": "application/json",
          },
       };
-      const body = JSON.stringify({ email, name, password, re_password });
+      const body = JSON.stringify({
+         email,
+         first_name,
+         last_name,
+         password,
+         re_password,
+      });
       try {
          await axios.post(
             `${process.env.REACT_APP_API_URL}/auth/users/`,

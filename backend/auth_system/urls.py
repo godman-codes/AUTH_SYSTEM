@@ -20,7 +20,8 @@ from django.views.generic import TemplateView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('djoser.urls')), # the djoser endpoints 
-    path('auth/', include('djoser.urls.jwt')), # the djoser jwt endpoints 
+    path('auth/', include('djoser.urls.jwt')), # the djoser jwt endpoints
+    path('auth/', include('djoser.social.urls')), # url to the djoser social endpoints step 12
 ]
 
 urlpatterns += [re_path(r'^.*', TemplateView.as_view(template_name='index.html'))]

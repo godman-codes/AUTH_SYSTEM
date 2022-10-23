@@ -1,10 +1,17 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import React, { Fragment } from "react";
-import { Link } from "react-router-dom";
+import React, { Fragment, useState } from "react";
+import { Link, Navigate } from "react-router-dom";
 import { connect } from "react-redux";
 import { logout } from "../actions/auth";
 
 const Navbar = ({ logout, isAuthenticated }) => {
+   // const [redirect, setRedirect] = useState(false);
+
+   const logout_user = () => {
+      logout();
+      // setRedirect(true);
+      return <Navigate to="/" />;
+   };
    const guestLinks = () => (
       <Fragment>
          <li className="nav-item">
@@ -21,39 +28,42 @@ const Navbar = ({ logout, isAuthenticated }) => {
    );
    const authLinks = () => (
       <li className="nav-item">
-         <a className="nav-link" href="#!" onClick={logout}>
+         <a className="nav-link" href="#!" onClick={logout_user}>
             Logout
          </a>
       </li>
    );
 
    return (
-      <nav className="navbar navbar-expand-lg navbar-light bg-light">
-         <Link className="navbar-brand" to="/">
-            Auth System
-         </Link>
-         <button
-            className="navbar-toggler"
-            type="button"
-            data-toggle="collapse"
-            data-target="#navbarNav"
-            aria-controls="navbarNav"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-         >
-            <span className="navbar-toggler-icon"></span>
-         </button>
-         <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav">
-               <li className="nav-item active">
-                  <Link className="nav-link" to="/">
-                     Home <span className="sr-only">(current)</span>
-                  </Link>
-               </li>
-               {isAuthenticated ? authLinks() : guestLinks()}
-            </ul>
-         </div>
-      </nav>
+      <Fragment>
+         <nav className="navbar navbar-expand-lg navbar-light bg-light">
+            <Link className="navbar-brand" to="/">
+               Auth System
+            </Link>
+            <button
+               className="navbar-toggler"
+               type="button"
+               data-toggle="collapse"
+               data-target="#navbarNav"
+               aria-controls="navbarNav"
+               aria-expanded="false"
+               aria-label="Toggle navigation"
+            >
+               <span className="navbar-toggler-icon"></span>
+            </button>
+            <div className="collapse navbar-collapse" id="navbarNav">
+               <ul className="navbar-nav">
+                  <li className="nav-item active">
+                     <Link className="nav-link" to="/">
+                        Home <span className="sr-only">(current)</span>
+                     </Link>
+                  </li>
+                  {isAuthenticated ? authLinks() : guestLinks()}
+               </ul>
+            </div>
+         </nav>
+         {/* {redirect ? <Navigate to="/" /> : <Fragment></Fragment>} */}
+      </Fragment>
    );
 };
 const mapStateToProps = (state) => ({

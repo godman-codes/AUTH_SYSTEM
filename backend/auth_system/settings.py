@@ -15,6 +15,11 @@ import os
 from pathlib import Path
 from decouple import config
 
+# this was added because of the force_text error being changed to force str this is hack and not advisable 
+import django
+from django.utils.encoding import force_str
+django.utils.encoding.force_text = force_str
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,9 +50,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'accounts',
+    'social_django', # this is for the social auth authentication you must first add it to the app FIRST STEP
+    'rest_framework_simplejwt', # 2nd step
+    'rest_framework_simplejwt.token_blacklist', # this is to manage the blacklisted tokens 3rd step
 ]
 
 MIDDLEWARE = [
+    'social_django.middleware.SocialAuthExceptionMiddleware', # add the social django middleware 4th step
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
@@ -71,6 +80,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # this two processors are very important for social auth with djoser
+                'social_django.context_processors.backends', # added the context processors to the backends step 5th step
+                'social_django.context_processors.login_redirect', # added the context processor for the login redirect 6th step
             ],
         },
     },
@@ -124,6 +136,7 @@ USE_I18N = True
 USE_TZ = True
 
 
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
@@ -162,20 +175,36 @@ DJOSER = {
     'USERNAME_RESET_CONFIRM_URL': 'email/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
+    # social auth step 14
+    'SOCIAL_AUTH_TOKEN_STRATEGY': 'djoser.social.token.jwt.TokenStrategy',
+    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': [config('ALLOWED_REDIRECT_URIS')],
     'SERIALIZERS': {
         'user_create': 'accounts.serializers.UserCreateSerializer',
         'user': 'accounts.serializers.UserCreateSerializer',
+        'current_user': 'accounts.serializers.UserCreateSerializer', # step 10
         'user_delete': 'djoser.serializers.UserDeleteSerializer',    
         }
     }
+# step 11 add this three after creating an application on google
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile', 'openid']
+SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    ],
 }
+AUTHENTICATION_BACKENDS = (
+    # this will allow the social auth work with my django backend
+    'social_core.backends.google.GoogleOAuth2', # 7th step
+    # this will allow the email abd password authentication we used still continue to work
+    'django.contrib.auth.backends.ModelBackend', # 8th step
+)
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('JWT',),
@@ -184,6 +213,10 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': False,
+    'AUTH_TOKEN_CLASSES': (
+        # this will use the access token as the authentication credential even though it is doing it by default
+        'rest_framework_simplejwt.tokens.AccessToken', # 9th step
+        )
     }
 
 CORS_ORIGIN_ALLOW_ALL = True
